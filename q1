@@ -1,0 +1,236 @@
+#include <iostream>
+using namespace std;
+
+class User {
+protected:
+    string cardId;
+    string name;
+    string stop;
+    bool isFeePaid;
+
+public:
+    User(string cardId, string name, string stop, bool paid = false)
+        : cardId(cardId), name(name), stop(stop), isFeePaid(paid) {}
+
+    virtual void payFee() = 0;
+    virtual void display() const = 0;
+
+    string getStop() const {
+        return stop;
+    }
+
+    bool checkIsFeePaid() const {
+        return isFeePaid;
+    }
+
+    virtual ~User() {}
+};
+
+class Student : public User {
+private:
+    const string studentId;
+
+public:
+    Student(string id, string cardId, string name, string stop, bool paid = false)
+        : User(cardId, name, stop, paid), studentId(id) {}
+
+    void payFee() override {
+        isFeePaid = true;
+        cout << "Student " << name << " has paid their semester fee.\n";
+    }
+
+    void display() const override {
+        cout << "[Student] ID: " << studentId << ", Name: " << name << ", Card: " << cardId
+             << ", Stop: " << stop << ", Fee Paid: " << (isFeePaid ? "Yes" : "No") << endl;
+    }
+
+    string getStudentID() const {
+        return studentId;
+    }
+};
+
+class Teacher : public User {
+private:
+    string teacherId;
+
+public:
+    Teacher(string id, string cardId, string name, string stop, bool paid = false)
+        : User(cardId, name, stop, paid), teacherId(id) {}
+
+    void payFee() override {
+        isFeePaid = true;
+        cout << "Teacher " << name << " has paid their monthly fee.\n";
+    }
+
+    void display() const override {
+        cout << "[Teacher] ID: " << teacherId << ", Name: " << name << ", Card: " << cardId
+             << ", Stop: " << stop << ", Fee Paid: " << (isFeePaid ? "Yes" : "No") << endl;
+    }
+};
+
+class Staff : public User {
+private:
+    string staffId;
+
+public:
+    Staff(string id, string cardId, string name, string stop, bool paid = false)
+        : User(cardId, name, stop, paid), staffId(id) {}
+
+    void payFee() override {
+        isFeePaid = true;
+        cout << "Staff " << name << " has paid their fee.\n";
+    }
+
+    void display() const override {
+        cout << "[Staff] ID: " << staffId << ", Name: " << name << ", Card: " << cardId
+             << ", Stop: " << stop << ", Fee Paid: " << (isFeePaid ? "Yes" : "No") << endl;
+    }
+};
+
+class Stop {
+private:
+    string stopName;
+
+public:
+    Stop(string name) : stopName(name) {}
+
+    string getStopName() const {
+        return stopName;
+    }
+};
+
+class Route {
+private:
+    string routeId;
+    Stop** stops;
+    int stopCount;
+    int stopCapacity;
+
+public:
+    Route(string id) : routeId(id), stopCount(0), stopCapacity(2) {
+        stops = new Stop*[stopCapacity];
+    }
+
+    ~Route() {
+        delete[] stops;
+    }
+
+    void addStop(Stop* s) {
+        if (stopCount == stopCapacity) {
+            stopCapacity *= 2;
+            Stop** newStops = new Stop*[stopCapacity];
+            for (int i = 0; i < stopCount; i++) {
+                newStops[i] = stops[i];
+            }
+            delete[] stops;
+            stops = newStops;
+        }
+        stops[stopCount++] = s;
+    }
+
+    Stop** getStops() {
+        return stops;
+    }
+
+    int getStopCount() const {
+        return stopCount;
+    }
+
+    string getRouteId() const {
+        return routeId;
+    }
+
+  
+    bool operator==(const Route& other) const {
+        if (stopCount != other.stopCount) return false;
+        for (int i = 0; i < stopCount; i++) {
+            if (stops[i]->getStopName() != other.stops[i]->getStopName())
+                return false;
+        }
+        return true;
+    }
+};
+
+class Bus {
+private:
+    string busID;
+    Route& route;
+    User** assignedUsers;
+    int userCount;
+    int userCapacity;
+
+public:
+    Bus(string id, Route& r) : busID(id), route(r), userCount(0), userCapacity(2) {
+        assignedUsers = new User*[userCapacity];
+    }
+
+    ~Bus() {
+        delete[] assignedUsers;
+    }
+
+    void assignUserToBus(User* u) {
+        for (int i = 0; i < route.getStopCount(); i++) {
+            if (route.getStops()[i]->getStopName() == u->getStop()) {
+                if (userCount == userCapacity) {
+                    userCapacity *= 2;
+                    User** temp = new User*[userCapacity];
+                    for (int j = 0; j < userCount; ++j)
+                        temp[j] = assignedUsers[j];
+                    delete[] assignedUsers;
+                    assignedUsers = temp;
+                }
+                assignedUsers[userCount++] = u;
+                cout << u->getStop() << " - User assigned to Bus " << busID << endl;
+                return;
+            }
+        }
+        cout << "Stop not found for this user on Bus " << busID << "'s route.\n";
+    }
+
+    void displayUsersAssignedToBus() const {
+        cout << "Passengers on Bus " << busID << ":\n";
+        for (int i = 0; i < userCount; i++) {
+            assignedUsers[i]->display();
+        }
+    }
+};
+
+int main() {
+    Stop* stopA = new Stop("Stop A");
+    Stop* stopB = new Stop("Stop B");
+    Stop* stopC = new Stop("Stop C");
+    Route route1("Route-FAST-001");
+    route1.addStop(stopA);
+    route1.addStop(stopB);
+    route1.addStop(stopC);
+    Bus bus1("Bus-Alpha", route1);
+    Student* s1 = new Student("S001", "C001", "Ali", "Stop A");
+    Teacher* t1 = new Teacher("T001", "C002", "Dr. Ahmad", "Stop B");
+    Staff* f1 = new Staff("F001", "C003", "Nadia", "Stop C");
+    s1->payFee();
+    t1->payFee();
+    f1->payFee();
+    bus1.assignUserToBus(s1);
+    bus1.assignUserToBus(t1);
+    bus1.assignUserToBus(f1);
+    bus1.displayUsersAssignedToBus();
+    Route route2("Route-FAST-002");
+    route2.addStop(stopA);
+    route2.addStop(stopB);
+    route2.addStop(stopC);
+
+    cout << "Comparing Route 1 and Route 2: ";
+    if (route1 == route2)
+        cout << "They are the same.\n";
+    else
+        cout << "They are different.\n";
+
+    delete s1;
+    delete t1;
+    delete f1;
+    delete stopA;
+    delete stopB;
+    delete stopC;
+
+    return 0;
+}
