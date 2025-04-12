@@ -1,0 +1,146 @@
+#include <iostream>
+#include <string>
+using namespace std;
+
+class Vehicle {
+protected:
+    string vehicleID;
+    int speed; // in km/h
+    int capacity; // weight in kg
+    float energyEfficiency; // units/km
+    static int totalDeliveries;
+
+public:
+    Vehicle(string id, int sp, int cap, float efficiency)
+        : vehicleID(id), speed(sp), capacity(cap), energyEfficiency(efficiency) {
+        totalDeliveries++;
+        cout << "[System] Vehicle registered: " << vehicleID << endl;
+    }
+
+    virtual ~Vehicle() {
+        totalDeliveries--;
+        cout << "[System] Vehicle removed: " << vehicleID << endl;
+    }
+
+    virtual void calculateRoute(string destination) {
+        cout << "[Vehicle] Default route calculation to " << destination << "." << endl;
+    }
+
+    virtual int estimateTime(int distance) const {
+        return distance / speed;
+    }
+
+    virtual void move() const {
+        cout << "[Vehicle] Generic movement initiated." << endl;
+    }
+
+    virtual void command(string cmd, string packageID) {
+        cout << "[Vehicle: " << vehicleID << "] Executing command '" << cmd << "' for Package ID: " << packageID << endl;
+    }
+
+    virtual void command(string cmd, string packageID, string urgency) {
+        cout << "[Vehicle: " << vehicleID << "] Executing command '" << cmd << "' for Package ID: " << packageID << " | Urgency: " << urgency << endl;
+    }
+
+    friend bool operator==(const Vehicle& v1, const Vehicle& v2) {
+        return v1.speed == v2.speed && v1.capacity == v2.capacity && v1.energyEfficiency == v2.energyEfficiency;
+    }
+
+    friend void resolveConflict(const Vehicle& v1, const Vehicle& v2);
+};
+
+int Vehicle::totalDeliveries = 0;
+
+class RamzanDrone : public Vehicle {
+public:
+    RamzanDrone(string id) : Vehicle(id, 120, 10, 0.5) {}
+
+    void calculateRoute(string destination) override {
+        cout << "[Drone: " << vehicleID << "] Calculating fast aerial route to " << destination << "." << endl;
+    }
+
+    void move() const override {
+        cout << "[Drone: " << vehicleID << "] Zipping through the sky with high-speed delivery." << endl;
+    }
+
+    void command(string cmd, string packageID, string urgency) override {
+        if (urgency == "urgent") {
+            cout << "[Drone: " << vehicleID << "] Engaging turbo mode for urgent iftar package: " << packageID << endl;
+        } else {
+            Vehicle::command(cmd, packageID, urgency);
+        }
+    }
+};
+
+class RamzanTimeShip : public Vehicle {
+public:
+    RamzanTimeShip(string id) : Vehicle(id, 80, 50, 1.0) {}
+
+    void calculateRoute(string destination) override {
+        cout << "[TimeShip: " << vehicleID << "] Calibrating historical timeline to reach " << destination << "." << endl;
+    }
+
+    void move() const override {
+        cout << "[TimeShip: " << vehicleID << "] Activating time travel protocol..." << endl;
+    }
+
+    void command(string cmd, string packageID, string urgency) override {
+        if (urgency == "urgent") {
+            cout << "[TimeShip: " << vehicleID << "] Urgent delivery requires historical clearance for package: " << packageID << endl;
+        } else {
+            Vehicle::command(cmd, packageID, urgency);
+        }
+    }
+};
+
+class RamzanHyperPod : public Vehicle {
+public:
+    RamzanHyperPod(string id) : Vehicle(id, 150, 100, 0.8) {}
+
+    void calculateRoute(string destination) override {
+        cout << "[HyperPod: " << vehicleID << "] Mapping underground hyper-tunnel to " << destination << "." << endl;
+    }
+
+    void move() const override {
+        cout << "[HyperPod: " << vehicleID << "] Gliding through ultra-fast pod tunnels underground." << endl;
+    }
+};
+
+void resolveConflict(const Vehicle& v1, const Vehicle& v2) {
+    cout << "\n[Conflict System] Resolving task assignment between " << v1.vehicleID << " and " << v2.vehicleID << "." << endl;
+
+    if (v1.energyEfficiency < v2.energyEfficiency) {
+        cout << "[Conflict Result] " << v1.vehicleID << " wins: More energy-efficient." << endl;
+    } else if (v2.energyEfficiency < v1.energyEfficiency) {
+        cout << "[Conflict Result] " << v2.vehicleID << " wins: More energy-efficient." << endl;
+    } else {
+        cout << "[Conflict Result] Draw: Vehicles have equal efficiency." << endl;
+    }
+}
+
+int main() {
+    cout << "Ramzan Box Delivery System Simulation " << endl;
+    RamzanDrone drone1("DRN-01");
+    RamzanTimeShip timeShip1("TSP-88");
+    RamzanHyperPod pod1("POD-07");
+    drone1.command("Deliver", "PKG001", "urgent");
+    timeShip1.command("Deliver", "PKG002", "urgent");
+    pod1.command("Deliver", "PKG003");
+    cout << endl;
+    drone1.calculateRoute("Karachi");
+    timeShip1.calculateRoute("Lahore");
+    pod1.calculateRoute("Islamabad");
+    cout << endl;
+    drone1.move();
+    timeShip1.move();
+    pod1.move();
+    cout << endl;
+    resolveConflict(drone1, pod1);
+    resolveConflict(timeShip1, drone1);
+    cout << endl;
+    if (drone1 == drone1) {
+        cout << "[Comparison] Drone is compared with itself: Identical in configuration." << endl;
+    }
+
+    return 0;
+}
