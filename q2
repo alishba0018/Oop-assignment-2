@@ -1,0 +1,179 @@
+#include <iostream>
+using namespace std;
+// using this insread of rand
+unsigned int seed = 12345;
+int simpleRandom() {
+    seed = (1103515245 * seed + 12345) % 2147483648;
+    return (seed % 10) + 1; 
+}
+
+class Ghost {
+protected:
+    string actorName;
+    int scareLevel;
+
+public:
+    Ghost(string actor) {
+        actorName = actor;
+        scareLevel = simpleRandom();
+    }
+
+    virtual void haunt() const = 0;
+    virtual Ghost* clone() const = 0;
+
+    int getScareLevel() const { return scareLevel; }
+
+    virtual ~Ghost() {}
+
+    friend ostream& operator<<(ostream& os, const Ghost& g) {
+        os << "[Ghost] Actor: " << g.actorName << ", Scare Level: " << g.scareLevel;
+        return os;
+    }
+
+    Ghost* operator+(const Ghost& other) {
+        Ghost* g = this->clone();
+        g->scareLevel += other.scareLevel;
+        g->actorName += " & " + other.actorName;
+        return g;
+    }
+};
+
+class Poltergeist : public Ghost {
+public:
+    Poltergeist(string actor) : Ghost(actor) {}
+    void haunt() const override {
+        cout << actorName << " (Poltergeist): Slams cupboards and throws cutlery!\n";
+    }
+    Ghost* clone() const override {
+        return new Poltergeist(*this);
+    }
+};
+
+class Banshee : public Ghost {
+public:
+    Banshee(string actor) : Ghost(actor) {}
+    void haunt() const override {
+        cout << actorName << " (Banshee): Screams echoes through the halls!\n";
+    }
+    Ghost* clone() const override {
+        return new Banshee(*this);
+    }
+};
+
+class ShadowGhost : public Ghost {
+public:
+    ShadowGhost(string actor) : Ghost(actor) {}
+    void haunt() const override {
+        cout << actorName << " (ShadowGhost): Murmurs from under the bed...\n";
+    }
+    Ghost* clone() const override {
+        return new ShadowGhost(*this);
+    }
+};
+
+class ShadowPoltergeist : public ShadowGhost, public Poltergeist {
+public:
+    ShadowPoltergeist(string actor)
+        : Ghost(actor), ShadowGhost(actor), Poltergeist(actor) {}
+
+    void haunt() const override {
+        ShadowGhost::haunt();
+        Poltergeist::haunt();
+    }
+
+    Ghost* clone() const override {
+        return new ShadowPoltergeist(*this);
+    }
+};
+
+class Visitor {
+private:
+    string name;
+    int bravery;
+
+public:
+    Visitor(string n, int b) {
+        name = n;
+        bravery = b;
+    }
+
+    void reactToGhost(int scareLevel) const {
+        cout << name << " faces a ghost with scare level " << scareLevel << "...\n";
+        if (scareLevel > bravery + 2) {
+            cout << name << ": I'm outta here!! \n";
+        } else if (scareLevel < bravery - 2) {
+            cout << name << ": Ha! That was nothing. \n";
+        } else {
+            cout << name << ": Okay... That was spooky. \n";
+        }
+    }
+
+    string getName() const { return name; }
+};
+
+class HauntedHouse;
+void visit(Visitor visitors[], int visitorCount, const HauntedHouse& house);
+
+class HauntedHouse {
+private:
+    string name;
+    Ghost* ghosts[10];
+    int ghostCount;
+
+public:
+    HauntedHouse(string n) {
+        name = n;
+        ghostCount = 0;
+    }
+
+    void addGhost(Ghost* g) {
+        if (ghostCount < 10) {
+            ghosts[ghostCount++] = g;
+        }
+    }
+
+    ~HauntedHouse() {
+        for (int i = 0; i < ghostCount; i++) {
+            delete ghosts[i];
+        }
+    }
+
+    friend void visit(Visitor visitors[], int visitorCount, const HauntedHouse& house);
+};
+
+void visit(Visitor visitors[], int visitorCount, const HauntedHouse& house) {
+    cout << "Visitors enter the haunted house: " << house.name << "...\n";
+
+    for (int i = 0; i < visitorCount; i++) {
+        cout << "Visitor: " << visitors[i].getName() << " walks in...\n";
+        for (int j = 0; j < house.ghostCount; j++) {
+            Ghost* g = house.ghosts[j];
+            g->haunt();
+            visitors[i].reactToGhost(g->getScareLevel());
+        }
+    }
+}
+
+int main() {
+    Visitor visitors[3] = {
+        Visitor("Ali", 2),
+        Visitor("Fatima", 5),
+        Visitor("Zain", 9)
+    };
+    HauntedHouse house1("Whispering Manor");
+    house1.addGhost(new Poltergeist("Naveed"));
+    house1.addGhost(new ShadowGhost("Lubna"));
+    house1.addGhost(new ShadowPoltergeist("The Dual One"));
+    HauntedHouse house2("Hollow Chapel");
+    Ghost* g1 = new ShadowGhost("Qasim");
+    Ghost* g2 = new Banshee("Iqra");
+    Ghost* combined = *g1 + *g2;
+    house2.addGhost(combined);
+    house2.addGhost(new Poltergeist("Fariha"));
+    visit(visitors, 3, house1);
+    visit(visitors, 3, house2);
+    delete g1;
+    delete g2;
+
+    return 0;
+}
