@@ -1,0 +1,205 @@
+#include <iostream>
+#include <string>
+using namespace std;
+
+const int MAX_ASSIGNMENTS = 5;
+const int MAX_PROJECTS = 2;
+const int MAX_STUDENTS = 10;
+
+class User {
+protected:
+    string name;
+    string ID;
+    string email;
+    string hashed_password;
+    string permissions;
+
+public:
+    User(string n, string id, string em, string password, string perm)
+        : name(n), ID(id), email(em), permissions(perm) {
+        hashed_password = hashPassword(password);
+    }
+
+    string getName() { return name; }
+    string getID() { return ID; }
+    string getEmail() { return email; }
+    string getPermissions() { return permissions; }
+
+    string hashPassword(string password) {
+        unsigned long hash = 5381;
+        for (int i = 0; password[i] != '\0'; i++) {
+            hash = hash * 33 + password[i];
+        }
+        return to_string(hash);
+    }
+
+    bool authenticate(string password) {
+        return hashed_password == hashPassword(password);
+    }
+
+    virtual void display() {
+        cout << "Name: " << name << "\nID: " << ID << "\nEmail: " << email << endl;
+    }
+
+    virtual bool accessLab() {
+        return permissions == "STUDENT";
+    }
+
+    virtual void performAction(string action) {
+        cout << "Action not implemented for this user type." << endl;
+    }
+};
+
+class Student : public User {
+private:
+    bool assignments[MAX_ASSIGNMENTS] = {false};
+
+public:
+    Student(string n, string id, string em, string password)
+        : User(n, id, em, password, "STUDENT") {}
+
+    void display() override {
+        User::display();
+        cout << "Role: Student\nAssignments: ";
+        for (int i = 0; i < MAX_ASSIGNMENTS; i++) {
+            cout << (assignments[i] ? "Submitted " : "Not Submitted ") << " ";
+        }
+        cout << endl;
+    }
+
+    void assignAssignment(int assignmentIndex) {
+        if (assignmentIndex >= 0 && assignmentIndex < MAX_ASSIGNMENTS) {
+            assignments[assignmentIndex] = false;
+        }
+    }
+
+    void submitAssignment(int assignmentIndex) {
+        if (assignmentIndex >= 0 && assignmentIndex < MAX_ASSIGNMENTS) {
+            assignments[assignmentIndex] = true;
+        }
+    }
+
+    void performAction(string action) override {
+        if (action == "submit assignment") {
+            submitAssignment(0);  // Assuming assignment index 0
+            cout << "Assignment submitted." << endl;
+        }
+        else {
+            User::performAction(action);
+        }
+    }
+};
+
+class TA : public Student {
+private:
+    Student* students[MAX_STUDENTS];
+    int studentCount = 0;
+    string projects[MAX_PROJECTS] = {};
+
+public:
+    TA(string n, string id, string em, string password)
+        : Student(n, id, em, password) {}
+
+    void display() override {
+        Student::display();
+        cout << "Role: Teaching Assistant\nStudents Managed: ";
+        for (int i = 0; i < studentCount; i++) {
+            cout << students[i]->getName() << " ";
+        }
+        cout << "\nProjects: ";
+        for (int i = 0; i < MAX_PROJECTS; i++) {
+            cout << (projects[i].empty() ? "No Project " : projects[i] + " ");
+        }
+        cout << endl;
+    }
+
+    bool assignStudent(Student* student) {
+        if (studentCount < MAX_STUDENTS) {
+            students[studentCount++] = student;
+            return true;
+        }
+        return false;
+    }
+
+    bool assignProject(string projectName) {
+        for (int i = 0; i < MAX_PROJECTS; i++) {
+            if (projects[i].empty()) {
+                projects[i] = projectName;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void performAction(string action) override {
+        if (action == "assign project") {
+            assignProject("Sample Project");
+            cout << "Assigned a new project to TA." << endl;
+        }
+        else {
+            Student::performAction(action);
+        }
+    }
+};
+
+class Professor : public User {
+private:
+    TA* tas[MAX_STUDENTS];
+    int taCount = 0;
+
+public:
+    Professor(string n, string id, string em, string password)
+        : User(n, id, em, password, "PROFESSOR") {}
+
+    void display() override {
+        User::display();
+        cout << "Role: Professor\nTeaching Assistants: ";
+        for (int i = 0; i < taCount; i++) {
+            cout << tas[i]->getName() << " ";
+        }
+        cout << endl;
+    }
+
+    bool assignTA(TA* ta) {
+        if (taCount < MAX_STUDENTS) {
+            tas[taCount++] = ta;
+            return true;
+        }
+        return false;
+    }
+
+    void performAction(string action) override {
+        if (action == "assign project") {
+            assignTA(new TA("TA-001", "123", "ta@email.com", "password"));
+            cout << "Assigned a new TA to professor." << endl;
+        }
+        else {
+            User::performAction(action);
+        }
+    }
+};
+
+void authenticateAndPerformAction(User* user, string action, string password) {
+    if (user->authenticate(password)) {
+        cout << "Authentication successful!\n";
+        user->performAction(action);
+    } else {
+        cout << "Authentication failed!\n";
+    }
+}
+
+int main() {
+    Student student("John Doe", "S123", "john@example.com", "password123");
+    TA ta("Jane Smith", "T001", "jane@example.com", "password123");
+    Professor professor("Dr. Richards", "P001", "richards@example.com", "professorpass");
+
+    student.display();
+    ta.display();
+    professor.display();
+
+    authenticateAndPerformAction(&student, "submit assignment", "password123");
+    authenticateAndPerformAction(&ta, "assign project", "password123");
+    authenticateAndPerformAction(&professor, "assign project", "professorpass");
+
+    return 0;
+}
